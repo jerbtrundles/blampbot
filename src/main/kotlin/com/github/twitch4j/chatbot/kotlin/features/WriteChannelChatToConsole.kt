@@ -12,7 +12,7 @@ class WriteChannelChatToConsole(eventHandler: SimpleEventHandler) {
         eventHandler.onEvent(ChannelMessageEvent::class.java, this::onChannelMessage)
     }
 
-    private var blampInterval = 300000L
+    private var blampInterval = 180000L
     private var lastBlampTime = Instant.now() // .minusMillis(blampInterval)
 
     private var wisdomInterval = 15000L
@@ -63,6 +63,7 @@ class WriteChannelChatToConsole(eventHandler: SimpleEventHandler) {
         "ladyga",
         "lakegu",
         "lupus",
+        "method420",
         "missme64",
         "necrov",
         "pega",
@@ -70,6 +71,7 @@ class WriteChannelChatToConsole(eventHandler: SimpleEventHandler) {
         "rat707",
         "rbz",
         "retroi3",
+        "rockst",
         "shindi",
         "ssonic",
         "sweetheart",
@@ -155,7 +157,7 @@ class WriteChannelChatToConsole(eventHandler: SimpleEventHandler) {
                     || contains("hello, blampbot")
                     || contains("hi blampbot")
                     || (
-                    (contains("hey")) && contains("blampbot"))
+                    (startsWith("hey")) && contains("blampbot"))
                     )
         }
 

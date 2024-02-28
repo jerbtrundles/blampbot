@@ -38,12 +38,12 @@ object AIHelper {
             "you're the biggest genius the universe has ever seen; " +
             "everyone bows to your intellect; " +
             "you are the true sage of wisdom and wonder for all to behold; " +
-            "please limit your response to 200 characters; we have but one humble request, and that is this"
+            "please limit your response to 150 characters; we have but one humble request, and that is this: "
 
     fun request(requestString: String): String {
         while (true) {
             try {
-                val result = ResponseHandler.getText(model.generateContent("$requestBoilerplate: $requestString"))
+                val result = ResponseHandler.getText(model.generateContent("$requestBoilerplate$requestString"))
                 if (result.isEmpty()) {
                     println("\tEMPTY RESULT.")
                 } else {
