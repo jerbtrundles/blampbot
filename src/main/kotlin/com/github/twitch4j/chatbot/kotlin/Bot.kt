@@ -7,13 +7,7 @@ import com.github.philippheuer.events4j.simple.SimpleEventHandler
 import com.github.twitch4j.ITwitchClient
 import com.github.twitch4j.TwitchClient
 import com.github.twitch4j.TwitchClientBuilder
-import com.github.twitch4j.chatbot.kotlin.features.ChannelNotificationOnFollow
-import com.github.twitch4j.chatbot.kotlin.features.ChannelNotificationOnLive
-import com.github.twitch4j.chatbot.kotlin.features.ChannelNotificationOnSubscription
 import com.github.twitch4j.chatbot.kotlin.features.WriteChannelChatToConsole
-import com.google.cloud.vertexai.VertexAI
-import com.google.cloud.vertexai.generativeai.preview.GenerativeModel
-import com.google.cloud.vertexai.generativeai.preview.ResponseHandler
 import kotlin.system.exitProcess
 
 object Bot {
