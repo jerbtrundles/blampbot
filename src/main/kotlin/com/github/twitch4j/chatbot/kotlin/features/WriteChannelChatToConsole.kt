@@ -2,42 +2,20 @@ package com.github.twitch4j.chatbot.kotlin.features
 
 import com.github.philippheuer.events4j.simple.SimpleEventHandler
 import com.github.twitch4j.chat.events.channel.ChannelMessageEvent
-import com.github.twitch4j.chatbot.kotlin.AIHelper
-import com.github.twitch4j.chatbot.kotlin.Phrases
-import com.github.twitch4j.chatbot.kotlin.Users
+import com.github.twitch4j.chatbot.kotlin.*
 import java.time.Duration
 import java.time.Instant
 import kotlin.random.Random
-
-const val RESET = "\u001B[0m"
-const val BLACK = "\u001B[30m"
-const val RED = "\u001B[31m"
-const val GREEN = "\u001B[32m"
-const val YELLOW = "\u001B[33m"
-const val BLUE = "\u001B[34m"
-const val PURPLE = "\u001B[35m"
-const val CYAN = "\u001B[36m"
-const val WHITE = "\u001B[37m"
-
-// Bold
-const val BLACK_BOLD = "\u001b[1;30m" // BLACK
-const val RED_BOLD = "\u001b[1;31m" // RED
-const val GREEN_BOLD = "\u001b[1;32m" // GREEN
-const val YELLOW_BOLD = "\u001b[1;33m" // YELLOW
-const val BLUE_BOLD = "\u001b[1;34m" // BLUE
-const val PURPLE_BOLD = "\u001b[1;35m" // PURPLE
-const val CYAN_BOLD = "\u001b[1;36m" // CYAN
-const val WHITE_BOLD = "\u001b[1;37m" // WHITE
 
 class WriteChannelChatToConsole(eventHandler: SimpleEventHandler) {
     init {
         eventHandler.onEvent(ChannelMessageEvent::class.java, this::onChannelMessage)
     }
 
-    val channel = "thecheeseball81"
+    private val channel = "thecheeseball81"
 
     private val startInstantly = false
-    private val startDelay = 150000L
+    private val startDelay = 240000L
     private val blampIntervalMinimum = 180000L
     private val blampIntervalMaximum = 480000L
     private val minimumMessageLength = 23
@@ -46,11 +24,15 @@ class WriteChannelChatToConsole(eventHandler: SimpleEventHandler) {
     // Random.nextLong(180000, 480000)
     // Random.nextLong(blampIntervalMinimum, blampIntervalMaximum)
     private var blampCooldown = startDelay
-    private var lastBlampTime = if (startInstantly) {
-        Instant.now().minusMillis(blampCooldown)
-    } else {
-        Instant.now()
-    }
+    private var lastBlampTime =
+        if (startInstantly) {
+            Instant.now().minusMillis(blampCooldown)
+        } else {
+            Instant.now()
+        }
+
+    private val blampCooldownSeconds
+        get() = timeRemaining(lastBlampTime, blampCooldown) / 1000.0
 
     private var wisdomCooldown = 30000L
     private var lastWisdomTime = Instant.now().minusMillis(wisdomCooldown)
@@ -81,12 +63,14 @@ class WriteChannelChatToConsole(eventHandler: SimpleEventHandler) {
         try {
             message("${event.channel.name} - ${event.user.name} - \"${event.message}\"")
 
-            if (isValid(event)) {
+            displayBlampStatus()
+
+            if (isValid(event) || isSomeoneSayingHello(event)) {
                 with(event.message.lowercase()) {
                     when {
-                        this == "blampbot no" -> beScolded(event)
-                        this == "blampbot yes" -> bePraised(event)
-                        this == "blampbot why" -> beWhyd(event)
+                        isBlampbotNo(this) -> beScolded(event)
+                        isBlampbotYes(this) -> bePraised(event)
+                        isBlampbotWhy(this) -> beWhyd(event)
                         isJerbRequest(event) -> doJerbRequest(event)
                         isSomeoneSayingHelloAndTurkey(event) -> doHelloBackWithTurkey(event)
                         isSomeoneSayingHello(event) -> doHelloBack(event)
@@ -95,15 +79,25 @@ class WriteChannelChatToConsole(eventHandler: SimpleEventHandler) {
                         containsCallout(this) -> doCallout(event)
                         canRetry(event) -> doRetry(event)
                         canBlamp(event) -> doBlamp(event)
-                        else -> {}
+                        else -> brightCyan("\tMessage is blampifiable!")
                     }
                 }
             }
         } catch (e: Exception) {
-            println("caught an exception")
             println(e.stackTraceToString())
         }
     }
+
+    private fun isBlampbotNo(message: String) = message == "blampbot no"
+    private fun isBlampbotYes(message: String) = message == "blampbot yes"
+    private fun isBlampbotWhy(message: String) = message == "blampbot why"
+
+    private fun displayBlampStatus() =
+        if (blampCooldownSeconds <= 0) {
+            green("\tBLAMP READY!")
+        } else {
+            info("BLAMP COOLDOWN: $blampCooldownSeconds seconds to go.")
+        }
 
     private fun isSomeoneSayingHelloAndTurkey(event: ChannelMessageEvent) =
         isSomeoneSayingHello(event) && event.message.contains("turkey")
@@ -146,45 +140,89 @@ class WriteChannelChatToConsole(eventHandler: SimpleEventHandler) {
     }
 
     private fun bePraised(event: ChannelMessageEvent) {
-        info("\tTHEY LOVE ME!")
+        green("THEY LOVE ME!")
         event.twitchChat.sendMessage(channel, ":D")
     }
 
     private fun beScolded(event: ChannelMessageEvent) {
-        info("\tTHEY NO LIKE ME :(")
+        info("THEY NO LIKE ME :(")
         event.twitchChat.sendMessage(channel, ":(")
     }
 
     private fun beWhyd(event: ChannelMessageEvent) {
-        info("\tTHEY NOT SURE ABOUT ME !?!!!?")
+        info("THEY NOT SURE ABOUT ME !?!!!?")
         event.twitchChat.sendMessage(channel, "O_o")
     }
 
-    private fun yellow(str: String) = println("$YELLOW$str")
-    private fun red(str: String) = println("$RED$str")
-    private fun green(str: String) = println("$GREEN$str")
-    private fun purple(str: String) = println("$PURPLE$str")
-    private fun blue(str: String) = println("$BLUE$str")
-    private fun cyan(str: String) = println("$CYAN$str")
-    private fun reset(str: String) = println("$RESET$str")
-    private fun error(str: String) = red("\tERROR: $str")
-    private fun info(str: String) = yellow("\t$str")
-    private fun callout(str: String) = blue("\tCALLOUT: $str")
-    private fun requestResponse(str: String) = cyan("\t$str")
-    private fun message(str: String) = reset(str)
+    private val commonEnding = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
+
+    private fun yellow(str: String, addNewLine: Boolean = true) =
+        if (addNewLine) {
+            println("${ConsoleColors.YELLOW}$str$commonEnding")
+        } else {
+            print("${ConsoleColors.YELLOW}$str")
+        }
+
+    private fun red(str: String, addNewLine: Boolean = true) =
+        if (addNewLine) {
+            println("${ConsoleColors.RED}$str$commonEnding")
+        } else {
+            print("${ConsoleColors.RED}$str")
+        }
+
+    private fun brightCyan(str: String, addNewLine: Boolean = true) =
+        if (addNewLine) {
+            println("${ConsoleColors.CYAN_BRIGHT}$str$commonEnding")
+        } else {
+            print("${ConsoleColors.CYAN_BRIGHT}$str")
+        }
+
+    private fun green(str: String, addNewLine: Boolean = true) =
+        if (addNewLine) {
+            println("${ConsoleColors.GREEN}$str$commonEnding")
+        } else {
+            print("${ConsoleColors.GREEN}$str")
+        }
+
+    private fun purple(str: String, addNewLine: Boolean = true) =
+        if (addNewLine) {
+            println("${ConsoleColors.PURPLE}$str$commonEnding")
+        } else {
+            print("${ConsoleColors.PURPLE}$str")
+        }
+
+    private fun blue(str: String, addNewLine: Boolean = true) =
+        if (addNewLine) {
+            println("${ConsoleColors.BLUE}$str$commonEnding")
+        } else {
+            print("${ConsoleColors.BLUE}$str")
+        }
+
+    private fun cyan(str: String, addNewLine: Boolean = true) =
+        if (addNewLine) {
+            println("${ConsoleColors.CYAN}$str$commonEnding")
+        } else {
+            print("${ConsoleColors.CYAN}$str")
+        }
+
+    private fun reset(str: String, addNewLine: Boolean = true) =
+        if (addNewLine) {
+            println("${ConsoleColors.RESET}$str$commonEnding")
+        } else {
+            print("${ConsoleColors.RESET}$str")
+        }
+
+    private fun error(str: String, addNewLine: Boolean = true) = red("\tERROR: $str", addNewLine)
+    private fun info(str: String, addNewLine: Boolean = true) = yellow("\t$str", addNewLine)
+    private fun callout(str: String, addNewLine: Boolean = true) = blue("\tCALLOUT: $str", addNewLine)
+    private fun requestResponse(str: String, addNewLine: Boolean = true) = cyan("\t$str", addNewLine)
+    private fun message(str: String, addNewLine: Boolean = true) = reset(str, addNewLine)
 
     private fun canBlamp(event: ChannelMessageEvent) =
         if (inBlampCooldownPeriod()) {
-            info("BLAMP COOLDOWN: ${timeRemaining(lastBlampTime, blampCooldown) / 1000.0} seconds to go.")
             false
         } else if (event.user.name == lastUser && lastUser != "jerbtrundles") {
             error("NO BLAMPING SAME PERSON TWICE.")
-            false
-        } else if (event.message.length < minimumMessageLength) {
-            error("MESSAGE TOO SHORT - ${event.message.length} (minimum: $minimumMessageLength)")
-            false
-        } else if (event.message.length > maximumMessageLength) {
-            error("MESSAGE TOO LONG - ${event.message.length} (maximum: $maximumMessageLength)")
             false
         } else {
             true
@@ -236,9 +274,10 @@ class WriteChannelChatToConsole(eventHandler: SimpleEventHandler) {
     private fun getCallout(lowerCaseString: String) =
         Phrases.calloutWords.firstOrNull { lowerCaseString.contains(it) }
 
-
     private fun doCallout(event: ChannelMessageEvent) {
-        if (!isCalloutInCooldown()) {
+        if (isCalloutInCooldown()) {
+            info("CALLOUT COOLDOWN: ${timeRemaining(lastCalloutTime, calloutCooldown) / 1000.0} seconds to go.")
+        } else {
             getCallout(event.message.lowercase())?.let {
                 val message = when (it) {
                     "durrrr key" -> "DOIKEY!"
@@ -247,6 +286,7 @@ class WriteChannelChatToConsole(eventHandler: SimpleEventHandler) {
                     "the first thing you buy at a supermarket",
                     "a food often stuffed" -> "TOIKEY!"
 
+                    "turkey tits" -> "TOIKEY TITS!"
                     else -> it.uppercase() + "!"
                 }
                 event.twitchChat.sendMessage(channel, message)
@@ -256,11 +296,11 @@ class WriteChannelChatToConsole(eventHandler: SimpleEventHandler) {
         }
     }
 
-    val forbiddenWords = arrayOf(
+    private val forbiddenWords = arrayOf(
         "moist"
     )
 
-    fun doBlamp(event: ChannelMessageEvent) {
+    private fun doBlamp(event: ChannelMessageEvent) {
         val blamped = AIHelper.blampify(event.message)
 
         if (blamped.isEmpty()) {
@@ -269,61 +309,71 @@ class WriteChannelChatToConsole(eventHandler: SimpleEventHandler) {
             error("BLAMPED MESSAGE SAME AS ORIGINAL MESSAGE")
         } else if (forbiddenWords.any { blamped.lowercase().contains(it) }) {
             error("BLAMPED MESSAGE CONTAINS FORBIDDEN WORD")
+        } else if (blamped.lowercase().contains("blampfied")) {
+            error("BLAMPBOT IS QUOTING ITSELF AGAIN!")
         } else if (!blamped.lowercase().contains("blamp")) {
             error("BLAMPED MESSAGE DOESN'T CONTAIN BLAMP")
+        } else if (bigMismatch(event.message, blamped)) {
+            green("\tBLAMPIFY - ${event.message} -> $blamped")
+            error("BLAMPED MESSAGE SIGNIFICANTLY DIFFERENT THAN ORIGINAL")
         } else {
-            green(
-                "<-- *** -->\n" +
-                        "\tBLAMPIFY\n" +
-                        "\t${event.message} -> $blamped\n" +
-                        "\t<-- *** -->"
-            )
+            green("\tBLAMPIFY - ${event.message} -> $blamped")
 
             event.twitchChat.sendMessage(channel, blamped)
             lastBlampTime = Instant.now()
             blampCooldown = Random.nextLong(from = blampIntervalMinimum, until = blampIntervalMaximum)
-            lastMessage = event.message
+            lastMessage = blamped
             lastUser = event.user.name
         }
     }
 
-//    ye olde blampify; simple random token replacement
-//    fun blampify(str: String): String {
-//        val words = str.split(" ").toMutableList()
-//        val replacementCount = (str.length / wordsPerBlamp).coerceAtLeast(1)
-//
-//        repeat(replacementCount) {
-//            val i = Random.nextInt(from = 0, until = words.size - 1)
-//            words[i] = "BLAMP"
-//        }
-//
-//        return words.joinToString(separator = " ")
-//    }
+    companion object {
+        private const val BLAMPED_STRING_MISMATCH_THRESHOLD = 60
+    }
 
-    fun canRetry(event: ChannelMessageEvent) =
+    private fun bigMismatch(message: String, blamped: String): Boolean {
+        val score = Levenshtein.similarityScore(message, blamped)
+        println("\tSimilarity: $score/100")
+        return score < BLAMPED_STRING_MISMATCH_THRESHOLD
+    }
+
+    private fun canRetry(event: ChannelMessageEvent) =
         event.message.startsWith("try again, blampbot")
                 && !inRetryCooldownPeriod()
 
-    fun doRetry(event: ChannelMessageEvent) =
+    private fun doRetry(event: ChannelMessageEvent) =
         with(AIHelper.blampify(lastMessage)) {
             event.twitchChat.sendMessage("jerbtrundles", this)
             event.twitchChat.sendMessage(channel, this)
         }
 
 
-    fun isValid(event: ChannelMessageEvent) =
-        if (!messageContainsSpace(event) && !messageContainsCallout(event)) {
+    private fun isValid(event: ChannelMessageEvent) =
+        if (isBlampbotYes(event.message.lowercase()) || isBlampbotNo(event.message.lowercase()) || isBlampbotWhy(event.message.lowercase())) {
+            true
+        } else if (!messageContainsSpace(event) && !messageContainsCallout(event)) {
             error("MESSAGE MUST CONTAIN AT LEAST ONE SPACE")
             false
-        } else if (messageContainsExcludedPhrase(event)) {
-            error("CONTAINS EXCLUDED PHRASING")
-            false
         } else if (messageFromExcludedUser(event)) {
-            error("MESSAGE IS FROM EXCLUDED USER - ${event.user.name}")
+            error("MESSAGE IS FROM EXCLUDED USER - ", addNewLine = false)
+            purple(event.user.name)
+            false
+        } else if (event.message.length < minimumMessageLength) {
+            error("MESSAGE TOO SHORT - ${event.message.length} (minimum: $minimumMessageLength)")
+            false
+        } else if (event.message.length > maximumMessageLength) {
+            error("MESSAGE TOO LONG - ${event.message.length} (maximum: $maximumMessageLength)")
             false
         } else {
-            true
+            getExcludedPhraseFromMessage(event)?.let {
+                error("CONTAINS EXCLUDED PHRASING - ", addNewLine = false)
+                purple(it)
+                false
+            } ?: true
         }
+
+    private fun getExcludedPhraseFromMessage(event: ChannelMessageEvent) =
+        Phrases.excluded.firstOrNull { event.message.lowercase().contains(it.lowercase()) }
 
     private fun messageContainsSpace(event: ChannelMessageEvent) =
         event.message.contains(" ")
@@ -338,8 +388,15 @@ class WriteChannelChatToConsole(eventHandler: SimpleEventHandler) {
         Phrases.containsCallout(event.message.lowercase())
 }
 
-// AIzaSyBxx_AOmE8gsgdYERBM6bpYdjtsU_T6qwY
-// curl \
-//  -H 'Content-Type: application/json' \
-//  -d '{"contents":[{"parts":[{"text":"Write a story about a magic backpack"}]}]}' \
-//  -X POST https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyBxx_AOmE8gsgdYERBM6bpYdjtsU_T6qwY
+//    ye olde blampify; simple random token replacement
+//    fun blampify(str: String): String {
+//        val words = str.split(" ").toMutableList()
+//        val replacementCount = (str.length / wordsPerBlamp).coerceAtLeast(1)
+//
+//        repeat(replacementCount) {
+//            val i = Random.nextInt(from = 0, until = words.size - 1)
+//            words[i] = "BLAMP"
+//        }
+//
+//        return words.joinToString(separator = " ")
+//    }

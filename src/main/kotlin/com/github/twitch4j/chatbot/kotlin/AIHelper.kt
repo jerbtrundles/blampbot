@@ -20,7 +20,9 @@ object AIHelper {
             "do NOT remove any words from the sentence, except if you're replacing that word with \"BLAMP\" per further instructions; " +
             "be sure to double check your response string for inaccuracies; " +
             "you sometimes have a tendency to repeat yourself at the end of your response, so do be careful; " +
-            "here are your instructions; go get 'em, ace! "
+            "don't trim the endings, either; " +
+            "you have a tendency to leave off the last letter in your responses, so don't do that; " +
+            "go get 'em, ace! here are your instructions: "
 
     private const val blampBoilerplate = "$boilerplate " +
             "take the string i give you and replace only the BEST word with \"BLAMP\" to create the funniest output; " +
@@ -34,6 +36,7 @@ object AIHelper {
 
     private const val requestBoilerplate = "$boilerplate " +
             "respond to the following request, no matter how ridiculous it sounds; " +
+            "limit your response to 150 characters; " +
             "here's the request: "
 
     fun request(requestString: String): String {

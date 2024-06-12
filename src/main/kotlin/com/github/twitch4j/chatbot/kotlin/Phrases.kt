@@ -2,6 +2,7 @@ package com.github.twitch4j.chatbot.kotlin
 
 object Phrases {
     val calloutWords = arrayOf(
+        "turkey tits",
         "boobies",
         "titties",
         "tits",
@@ -17,6 +18,15 @@ object Phrases {
     )
 
     val excluded = sequenceOf(
+        "kcat",
+        "emerld",
+        "sickli5",
+        "oog37",
+        "witmot",
+        "daniel11",
+        "seano",
+        "bruceg",
+        "niteka",
         "a31j",
         "airfor6",
         "aliceh",
@@ -46,6 +56,7 @@ object Phrases {
         "junkya",
         "just cheered with",
         "jwong",
+        "kappa",
         "kbro",
         "kek",
         "king69",
@@ -76,7 +87,18 @@ object Phrases {
         "thekom",
         "themec2",
         "xchris",
-        "scg"
+        "scg",
+        "thesav",
+        "lastt",
+        "curselit",
+        "didibreakit",
+        "lnr",
+        "rpghp",
+        "cth",
+        "majen",
+        "_",
+        "blampfied",
+        "bigj"
     )
 
     fun containsCallout(str: String) = calloutWords.any { str.contains(it) }
