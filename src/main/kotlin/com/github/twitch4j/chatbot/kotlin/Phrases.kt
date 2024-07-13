@@ -1,105 +1,44 @@
 package com.github.twitch4j.chatbot.kotlin
 
 object Phrases {
-    val calloutWords = arrayOf(
-        "turkey tits",
-        "boobies",
-        "titties",
-        "tits",
-        "spaghetti",
-        "rigatoni",
-        "asshole",
-        "turkey",
+    // sometimes the shorter phrases are substrings of longer phrases
+    // sort by length so that longer phrases are returned before shorter ones
+    val calloutWords = sequenceOf(
         "name something people take with them to the beach",
         "the first thing you buy at a supermarket",
         "a food often stuffed",
+        "turkey tits",
+        "durrrr key",
+        "spaghetti",
+        "rigatoni",
         "gabagool",
-        "durrrr key"
+        "asshole",
+        "boobies",
+        "titties",
+        "turkey",
+        "tits",
     )
 
     val excluded = sequenceOf(
-        "kcat",
-        "emerld",
-        "sickli5",
-        "oog37",
-        "witmot",
-        "daniel11",
-        "seano",
-        "bruceg",
-        "niteka",
-        "a31j",
-        "airfor6",
-        "aliceh",
-        "amad",
-        "arcus",
-        "blackw",
-        "cheese23",
-        "chroma82",
-        "contri",
-        "destin279",
-        "ejsa",
-        "erinpl",
-        "fcough",
-        "finame",
-        "geemal",
-        "gg",
-        "grayskull",
-        "hgo",
-        "hoodyt",
-        "http",
-        "hype",
-        "jammit",
-        "jayc",
-        "jimbles",
-        "jsr",
-        "jt",
-        "junkya",
-        "just cheered with",
-        "jwong",
-        "kappa",
-        "kbro",
-        "kek",
-        "king69",
-        "kripp",
-        "ladyga",
-        "lakegu",
-        "luckybun",
-        "lupus",
-        "method420",
-        "missme64",
-        "necrov",
-        "pega",
-        "pikas",
-        "pog",
-        "rat707",
-        "rbz",
-        "retroi3",
-        "rockst",
-        "rpgm",
-        "shindi",
-        "ssonic",
-        "sweetheart",
-        "tagn",
-        "tasn",
-        "tetral",
-        "theche31",
-        "thekin502MeatWad",
-        "thekom",
-        "themec2",
-        "xchris",
-        "scg",
-        "thesav",
-        "lastt",
-        "curselit",
-        "didibreakit",
-        "lnr",
-        "rpghp",
-        "cth",
-        "majen",
         "_",
-        "blampfied",
-        "bigj"
+        "@",
+        "gg",
+        "http",
+    )
+
+    internal val forbidden = arrayOf(
+        "moist"
     )
 
     fun containsCallout(str: String) = calloutWords.any { str.contains(it) }
+
+    val regexEmoji = Regex("""\b[a-z][\S]*[A-Z][\S]*\b""")
+
+    fun containsEmoji(str: String) =
+        str.split(" ").any { token -> isEmoji(token) }
+    private fun isEmoji(token: String): Boolean {
+        return regexEmoji.containsMatchIn(token)
+    }
+
+    fun getEmojis(str: String) = regexEmoji.findAll(str).map { it.value }.toList().distinct()
 }
