@@ -24,21 +24,28 @@ object Phrases {
         "@",
         "gg",
         "http",
+        "addcheese"
     )
 
     internal val forbidden = arrayOf(
         "moist"
     )
 
-    fun containsCallout(str: String) = calloutWords.any { str.contains(it) }
+    fun containsCallout(str: String) =
+        calloutWords.any { str.contains(it) }
 
-    val regexEmoji = Regex("""\b[a-z][\S]*[A-Z][\S]*\b""")
+    val regexEmoji =
+        Regex("""\b[a-z][\S]*[A-Z][\S]*\b""")
 
     fun containsEmoji(str: String) =
-        str.split(" ").any { token -> isEmoji(token) }
-    private fun isEmoji(token: String): Boolean {
-        return regexEmoji.containsMatchIn(token)
-    }
+        str.split(" ")
+            .any { token -> isEmoji(token) }
+    private fun isEmoji(token: String) =
+        regexEmoji.containsMatchIn(token)
 
-    fun getEmojis(str: String) = regexEmoji.findAll(str).map { it.value }.toList().distinct()
+    fun getEmojis(str: String) =
+        regexEmoji.findAll(str)
+            .map { it.value }
+            .toList()
+            .distinct()
 }

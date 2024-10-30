@@ -8,12 +8,14 @@ import kotlin.random.Random
 object Blampbot {
     private val channel = "thecheeseball81"
 
-    private val startInstantly = false
-    private val startDelay = 30000L
-    private val blampIntervalMinimum = 180000L
-    private val blampIntervalMaximum = 480000L
-    private val minimumMessageLength = 23
-    private val maximumMessageLength = 100
+    private const val startInstantly = true
+    private const val startDelay = 240000L
+    private const val blampIntervalMinimum = 240000L
+    private const val blampIntervalMaximum = 480000L
+    private const val minimumMessageLength = 23
+    private const val maximumMessageLength = 100
+    private const val minimumMessagesBetweenBlamps = 20
+    private var messagesSinceLastBlamp = minimumMessagesBetweenBlamps
 
     // Random.nextLong(180000, 480000)
     // Random.nextLong(blampIntervalMinimum, blampIntervalMaximum)
@@ -43,18 +45,38 @@ object Blampbot {
     private var lastMessage = ""
     private var lastUser = ""
 
-    private fun timeSince(instant: Instant) = Duration.between(instant, Instant.now()).toMillis()
-    private fun timeRemaining(lastTime: Instant, interval: Long) = interval - timeSince(lastTime)
-    private fun isCooldownOver(lastTime: Instant, interval: Long) = timeRemaining(lastTime, interval) <= 0
-    private fun inBlampCooldownPeriod() = !isCooldownOver(lastBlampTime, blampCooldown)
-    private fun inRetryCooldownPeriod() = !isCooldownOver(lastRetryTime, retryCooldown)
-    private fun isCalloutInCooldown() = !isCooldownOver(lastCalloutTime, calloutCooldown)
-    private fun isWisdomInCooldown() = !isCooldownOver(lastWisdomTime, wisdomCooldown)
-    private fun isRequestInCooldown() = !isCooldownOver(lastRequestTime, requestCooldown)
+    private fun timeSince(instant: Instant) =
+        Duration.between(instant, Instant.now()).toMillis()
 
-    private fun isBlampbotNo(message: String) = message == "blampbot no"
-    private fun isBlampbotYes(message: String) = message == "blampbot yes"
-    private fun isBlampbotWhy(message: String) = message == "blampbot why"
+    private fun timeRemaining(lastTime: Instant, interval: Long) =
+        interval - timeSince(lastTime)
+
+    private fun isCooldownOver(lastTime: Instant, interval: Long) =
+        timeRemaining(lastTime, interval) <= 0
+
+    private fun inBlampCooldownPeriod() =
+        !isCooldownOver(lastBlampTime, blampCooldown)
+
+    private fun inRetryCooldownPeriod() =
+        !isCooldownOver(lastRetryTime, retryCooldown)
+
+    private fun isCalloutInCooldown() =
+        !isCooldownOver(lastCalloutTime, calloutCooldown)
+
+    private fun isWisdomInCooldown() =
+        !isCooldownOver(lastWisdomTime, wisdomCooldown)
+
+    private fun isRequestInCooldown() =
+        !isCooldownOver(lastRequestTime, requestCooldown)
+
+    private fun isBlampbotNo(message: String) =
+        message == "blampbot no"
+
+    private fun isBlampbotYes(message: String) =
+        message == "blampbot yes"
+
+    private fun isBlampbotWhy(message: String) =
+        message == "blampbot why"
 
     private fun displayBlampStatus() =
         if (blampCooldownSeconds <= 0) {
@@ -91,10 +113,30 @@ object Blampbot {
         }
 
     private fun doHelloBack(event: ChannelMessageEvent) {
-        val response = "Hey there, ${event.user.name}!"
+        // val response = "Hey there, ${event.user.name}!"
+        var response = AIHelper.helloBack(event.user.name)
+        val maxRetryAttempts = 5
+        var retryAttempt = 0
+        // validate response
+        while (!validateHelloBackResponse(event.user.name, response) && retryAttempt < maxRetryAttempts) {
+            response = AIHelper.helloBack(event.user.name)
+            retryAttempt++
+        }
+
         green("\tHELLO BACK - $response")
         event.twitchChat.sendMessage(channel, response)
     }
+
+    private fun validateHelloBackResponse(sender: String, response: String) =
+        if (!response.contains(sender, ignoreCase = true)) {
+            false
+        } else {
+            validateResponse(response)
+        }
+
+    private fun validateResponse(response: String) =
+        // TODO: actually validate the response
+        true
 
     private fun doWisdom(event: ChannelMessageEvent) {
         val wisdom = AIHelper.getWisdom()
@@ -127,12 +169,15 @@ object Blampbot {
             ::blue,
             ::purple
         )
+
         str.forEachIndexed { index, c ->
+            // cycle through the color functions
             val colorFunction = colors[index % colors.size]
+            // print the character with the current color function
             colorFunction(c.toString(), false)
         }
 
-        if(addNewLine) {
+        if (addNewLine) {
             println()
         }
     }
@@ -219,6 +264,9 @@ object Blampbot {
         } else if (event.user.name == lastUser && lastUser != "jerbtrundles") {
             error("NO BLAMPING SAME PERSON TWICE.")
             false
+        } else if (messagesSinceLastBlamp < minimumMessagesBetweenBlamps) {
+            error("NOT ENOUGH MESSAGES SINCE LAST BLAMP ($messagesSinceLastBlamp/$minimumMessagesBetweenBlamps)")
+            false
         } else {
             true
         }
@@ -280,7 +328,6 @@ object Blampbot {
                     "name something people take with them to the beach",
                     "the first thing you buy at a supermarket",
                     "a food often stuffed" -> "TOIKEY!"
-
                     "turkey tits" -> "TOIKEY TITS!"
                     else -> it.uppercase() + "!"
                 }
@@ -292,7 +339,15 @@ object Blampbot {
     }
 
     private fun doBlamp(event: ChannelMessageEvent) {
-        val blamped = AIHelper.blampify(event.message).trim()
+        val response = AIHelper.blampify(event.message).trim()
+        val blamped = if (response.startsWith("\"") && response.endsWith("\"")) {
+            response.substring(
+                startIndex = 1,
+                endIndex = response.length - 1
+            )
+        } else {
+            response
+        }
 
         if (blamped.isEmpty()) {
             error("BLAMPED MESSAGE IS EMPTY")
@@ -310,20 +365,9 @@ object Blampbot {
             green("\tBLAMPIFY - ${event.message} -> $blamped")
             error("BLAMPED MESSAGE SIGNIFICANTLY DIFFERENT THAN ORIGINAL")
         } else {
-            if (blamped.startsWith("\"") && blamped.endsWith("\"")) {
-                val trimmed = blamped.substring(
-                    startIndex = 1,
-                    endIndex = blamped.length - 1
-                )
-
-                green("\tBLAMPIFY (TRIMMED) - ${event.message} -> $trimmed")
-                event.twitchChat.sendMessage(channel, trimmed)
-                lastMessage = trimmed
-            } else {
-                green("\tBLAMPIFY - ${event.message} -> $blamped")
-                event.twitchChat.sendMessage(channel, blamped)
-                lastMessage = blamped
-            }
+            green("\tBLAMPIFY - ${event.message} -> $blamped")
+            event.twitchChat.sendMessage(channel, blamped)
+            lastMessage = blamped
 
             lastBlampTime = Instant.now()
             blampCooldown = Random.nextLong(from = blampIntervalMinimum, until = blampIntervalMaximum)
@@ -348,9 +392,13 @@ object Blampbot {
             event.twitchChat.sendMessage(channel, this)
         }
 
-
     private fun isValid(event: ChannelMessageEvent) =
-        if (isBlampbotYes(event.message.lowercase()) || isBlampbotNo(event.message.lowercase()) || isBlampbotWhy(event.message.lowercase())) {
+        if (isBlampbotYes(event.message.lowercase())
+            || isBlampbotNo(event.message.lowercase())
+            || isBlampbotWhy(event.message.lowercase())
+            || isSomeoneSayingHello(event)
+            || messageContainsCallout(event)
+        ) {
             true
         } else if (!messageContainsSpace(event) && !messageContainsCallout(event)) {
             error("MESSAGE MUST CONTAIN AT LEAST ONE SPACE")
@@ -369,7 +417,7 @@ object Blampbot {
             val emojis = Phrases.getEmojis(event.message)
             if (emojis.isNotEmpty()) {
                 error("MESSAGE CONTAINS EMOJIS - ", addNewLine = false)
-                rainbow(emojis.joinToString())
+                purple(emojis.joinToString())
                 false
             } else {
                 getExcludedPhraseFromMessage(event)?.let {
@@ -402,7 +450,7 @@ object Blampbot {
 
         if (isJerbRequest(event)) {
             doJerbRequest(event)
-        } else if (isValid(event) || isSomeoneSayingHello(event)) {
+        } else if (isValid(event)) {
             with(event.message.lowercase()) {
                 when {
                     isBlampbotNo(this) -> beScolded(event)
@@ -419,5 +467,7 @@ object Blampbot {
                 }
             }
         }
+
+        messagesSinceLastBlamp++
     }
 }

@@ -39,15 +39,18 @@ object AIHelper {
             "limit your response to 150 characters; " +
             "here's the request: "
 
+    private const val helloBackBoilerplate = "$boilerplate " +
+            "[user], a good friend, has just greeted you; could you provide a friendly response? just the response, please"
+
     fun request(requestString: String): String {
         while (true) {
             try {
-                val result = ResponseHandler.getText(model.generateContent("$requestBoilerplate \"$requestString\""))
-                if (result.isEmpty()) {
+                val response = ResponseHandler.getText(model.generateContent("$requestBoilerplate \"$requestString\""))
+                if (response.isEmpty()) {
                     println("\tEMPTY RESULT.")
                 } else {
-                    println("\tREQUEST: $result")
-                    return result
+                    println("\tRESPONSE: $response")
+                    return response
                 }
             } catch (e: Exception) {
                 println("\tERROR: ${e.message}")
@@ -77,6 +80,18 @@ object AIHelper {
     fun blampify(str: String): String {
         try {
             val result = ResponseHandler.getText(model.generateContent(blampBoilerplate + "\"$str\""))
+            return result
+        } catch (e: Exception) {
+            println("\tERROR: ${e.message}.")
+            Thread.sleep(1000)
+            return ""
+        }
+    }
+
+    fun helloBack(name: String): String {
+        val helloBackBoilerplateWithUser = helloBackBoilerplate.replace("[user]", name)
+        try {
+            val result = ResponseHandler.getText(model.generateContent(helloBackBoilerplateWithUser))
             return result
         } catch (e: Exception) {
             println("\tERROR: ${e.message}.")

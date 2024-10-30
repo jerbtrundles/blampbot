@@ -6,8 +6,9 @@ object Users {
     val excluded = arrayOf(
         "nightbot",
         "thecheeseball81", // sends bot messages sometimes; can fix this
-        "heyits_b_a_618",
-        "bowlymania"
+        "b_a_618",
+        "bowlymania",
+        "jaedubbs",
     )
 
     fun isExcluded(name: String) = excluded.any { name == it }
