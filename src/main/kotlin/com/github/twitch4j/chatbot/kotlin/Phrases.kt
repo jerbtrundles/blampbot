@@ -1,5 +1,7 @@
 package com.github.twitch4j.chatbot.kotlin
 
+import com.github.twitch4j.chat.events.channel.ChannelMessageEvent
+
 object Phrases {
     // sometimes the shorter phrases are substrings of longer phrases
     // sort by length so that longer phrases are returned before shorter ones
@@ -17,22 +19,29 @@ object Phrases {
         "titties",
         "turkey",
         "tits",
+        // "doing good",
     )
 
-    val excluded = sequenceOf(
+    val forbiddenWords = sequenceOf(
         "_",
         "@",
         "gg",
         "http",
-        "addcheese"
-    )
-
-    internal val forbidden = arrayOf(
-        "moist"
+        "addcheese",
+        "depress",
+        "moist",
+        "cheer",
+        "hype"
     )
 
     fun containsCallout(str: String) =
         calloutWords.any { str.contains(it) }
+
+    fun getCalloutWordsList(str: String) =
+        calloutWords.filter { str.contains(it) }.toList()
+
+    fun getForbiddenWordsList(str: String) =
+        forbiddenWords.filter { str.contains(it) }.toList()
 
     val regexEmoji =
         Regex("""\b[a-z][\S]*[A-Z][\S]*\b""")
@@ -40,6 +49,7 @@ object Phrases {
     fun containsEmoji(str: String) =
         str.split(" ")
             .any { token -> isEmoji(token) }
+
     private fun isEmoji(token: String) =
         regexEmoji.containsMatchIn(token)
 
@@ -48,4 +58,8 @@ object Phrases {
             .map { it.value }
             .toList()
             .distinct()
+
+    fun getCalloutFromMessageOrNull(event: ChannelMessageEvent) =
+        calloutWords.firstOrNull { calloutWord -> event.message.lowercase().contains(calloutWord) }
+
 }

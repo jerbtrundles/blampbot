@@ -5,11 +5,15 @@ object Users {
     //  only filter out certain bot messages
     val excluded = arrayOf(
         "nightbot",
-        "thecheeseball81", // sends bot messages sometimes; can fix this
+//        "thecheeseball81", // sends bot messages sometimes; can fix this
         "b_a_618",
         "bowlymania",
         "jaedubbs",
+        "quacksplat",
+        "bedwablackburn",
+        "buttsbotisbackbaby"
+
     )
 
-    fun isExcluded(name: String) = excluded.any { name == it }
+    fun isExcluded(name: String) = excluded.any { name.contains(it) }
 }
